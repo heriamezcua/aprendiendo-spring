@@ -1,0 +1,12 @@
+/* Acento verde inspirado en el logo de Spring */
+:root {
+	--sl-color-accent-low: #12300f;
+	--sl-color-accent: #4f9a2c;
+	--sl-color-accent-high: #c8ecb4;
+}
+
+:root[data-theme='light'] {
+	--sl-color-accent-low: #d9f2cc;
+	--sl-color-accent: #3d7f1f;
+	--sl-color-accent-high: #1c3d0e;
+}
