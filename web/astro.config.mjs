@@ -13,7 +13,7 @@ export default defineConfig({
 			},
 			social: [
 				// Cambia la URL por la de tu repositorio
-				{ icon: 'github', label: 'GitHub', href: 'https://github.com/TU_USUARIO/aprendiendo-spring' },
+				{ icon: 'github', label: 'GitHub', href: 'https://github.com/heriamezcua/aprendiendo-spring' },
 			],
 			customCss: ['./src/styles/custom.css'],
 			lastUpdated: true,
