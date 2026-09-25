@@ -8,18 +8,17 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class HolaController {
-	
+
 	@GetMapping("/hola")
 	public String hola() {
 		return "Hola, Spring";
 	}
-	
+
 	@GetMapping("/saludo")
-	public Saludo saludo(@RequestParam(defaultValue = "mundo") String nombre) {
-	    return new Saludo("Hola, " + nombre, LocalDateTime.now());
-	}
-	
-	public record Saludo(String mensaje, LocalDateTime fecha) {
+	public Saludo saludo(@RequestParam(defaultValue = "mundo") String nombre,
+			@RequestParam(defaultValue = "es") String idioma) {
+		String prefijo = idioma.equalsIgnoreCase("en") ? "Hello, " : "Hola, ";
+		return new Saludo(prefijo + nombre, LocalDateTime.now());
 	}
 
 }

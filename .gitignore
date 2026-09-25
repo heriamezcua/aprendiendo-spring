@@ -16,3 +16,6 @@ web/.astro/
 # Sistema
 .DS_Store
 .env
+
+# Eclipse / STS
+bin/
