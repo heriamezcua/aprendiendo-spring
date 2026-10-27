@@ -1,0 +1,223 @@
+---
+// Barra de progreso del curso: 9 segmentos, uno por bloque.
+// - variante "completa": portada, con el porcentaje, el siguiente hito y la ruta entera.
+// - variante "compacta": cabecera de cada lección, con su bloque resaltado.
+import EstadoBloque from './EstadoBloque.astro';
+import {
+	avancePorEstado,
+	bloques,
+	bloquesCompletados,
+	porcentajeCurso,
+	siguienteBloque,
+} from '../data/progreso';
+
+interface Props {
+	variante?: 'completa' | 'compacta';
+	/** Número del bloque que se está viendo (solo en la variante compacta). */
+	actual?: number;
+}
+
+const { variante = 'completa', actual } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const bloqueActual = bloques.find((b) => b.numero === actual);
+---
+
+<section class:list={['progreso', variante]} aria-label="Progreso del curso">
+	{
+		variante === 'completa' ? (
+			<div class="cabecera">
+				<p class="porcentaje">
+					<strong>{porcentajeCurso} %</strong> del curso
+				</p>
+				<p class="resumen">
+					{bloquesCompletados} de {bloques.length} bloques completados
+					{siguienteBloque && (
+						<>
+							{' · '}Siguiente hito: <strong>completar el bloque {siguienteBloque.numero} ({siguienteBloque.nombre})</strong>
+						</>
+					)}
+				</p>
+			</div>
+		) : (
+			bloqueActual && (
+				<p class="resumen">
+					Bloque {bloqueActual.numero} de {bloques.length}
+					{' · '}
+					<EstadoBloque estado={bloqueActual.estado} />
+					{' · '}Curso al <strong>{porcentajeCurso} %</strong>
+				</p>
+			)
+		)
+	}
+
+	<div
+		class="barra"
+		role="progressbar"
+		aria-valuemin="0"
+		aria-valuemax="100"
+		aria-valuenow={porcentajeCurso}
+		aria-valuetext={`${porcentajeCurso} % del curso, ${bloquesCompletados} de ${bloques.length} bloques completados`}
+	>
+		{
+			bloques.map((b, i) => (
+				<span
+					class:list={['segmento', { actual: b.numero === actual }]}
+					style={`--avance: ${avancePorEstado[b.estado]}; --retraso: ${i * 70}ms`}
+					title={`Bloque ${b.numero}: ${b.nombre} (${b.estado})`}
+				>
+					<span class:list={['relleno', { parcial: b.estado !== 'Completada' }]} />
+				</span>
+			))
+		}
+	</div>
+
+	{
+		variante === 'completa' && (
+			<ol class="ruta">
+				{bloques.map((b) => (
+					<li class:list={{ hecho: b.estado === 'Completada' }}>
+						<span class="numero">{b.numero}</span>
+						<div class="texto">
+							<div class="titulo">
+								<span class="nombre">
+									{b.leccion ? <a href={`${base}/${b.leccion}/`}>{b.nombre}</a> : b.nombre}
+								</span>
+								<EstadoBloque estado={b.estado} />
+							</div>
+							<span class="detalle">
+								{b.aprendes} · <code>{b.proyecto}</code>
+							</span>
+						</div>
+					</li>
+				))}
+			</ol>
+		)
+	}
+</section>
+
+<style>
+	.progreso {
+		margin-block: 1.5rem;
+	}
+	.progreso.compacta {
+		margin-block: 0.75rem 0;
+	}
+	.progreso p {
+		margin: 0;
+	}
+	.porcentaje {
+		font-size: var(--sl-text-2xl);
+		color: var(--sl-color-white);
+	}
+	.porcentaje strong {
+		color: var(--sl-color-accent-high);
+	}
+	.resumen {
+		color: var(--sl-color-gray-2);
+		font-size: var(--sl-text-sm);
+		margin-block: 0.25rem 0.75rem !important;
+	}
+
+	.barra {
+		display: flex;
+		gap: 4px;
+	}
+	.segmento {
+		flex: 1;
+		height: 0.75rem;
+		border-radius: 999px;
+		background: var(--sl-color-gray-5);
+		overflow: hidden;
+	}
+	.compacta .segmento {
+		height: 0.5rem;
+	}
+	.segmento.actual {
+		outline: 2px solid var(--sl-color-accent);
+		outline-offset: 2px;
+	}
+	.relleno {
+		display: block;
+		height: 100%;
+		width: calc(var(--avance) * 100%);
+		background: var(--sl-color-accent);
+		border-radius: inherit;
+		animation: llenar 0.6s ease-out var(--retraso) both;
+	}
+	/* Lo que está en marcha va rayado: se ve que falta poco para cerrarlo. */
+	.relleno.parcial {
+		background: repeating-linear-gradient(
+			-45deg,
+			var(--sl-color-accent) 0 6px,
+			color-mix(in srgb, var(--sl-color-accent) 65%, transparent) 6px 12px
+		);
+	}
+	@keyframes llenar {
+		from {
+			width: 0;
+		}
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.relleno {
+			animation: none;
+		}
+	}
+
+	.ruta {
+		list-style: none;
+		padding: 0;
+		margin-top: 1.5rem;
+		display: grid;
+		gap: 0.5rem;
+	}
+	.ruta li {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.6rem 0.75rem;
+		margin: 0;
+		border: 1px solid var(--sl-color-gray-5);
+		border-radius: 0.5rem;
+	}
+	.ruta li.hecho {
+		border-color: var(--sl-color-accent);
+	}
+	.numero {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 1.75rem;
+		height: 1.75rem;
+		border-radius: 50%;
+		background: var(--sl-color-gray-6);
+		color: var(--sl-color-white);
+		font-weight: 600;
+		font-size: var(--sl-text-sm);
+	}
+	.hecho .numero {
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.texto {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	.titulo {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.25rem 0.75rem;
+	}
+	.nombre {
+		color: var(--sl-color-white);
+		font-weight: 600;
+	}
+	.detalle {
+		color: var(--sl-color-gray-3);
+		font-size: var(--sl-text-sm);
+	}
+</style>

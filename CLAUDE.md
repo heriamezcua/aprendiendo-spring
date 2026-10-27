@@ -47,4 +47,5 @@ El progreso se registra en la página «Aprendiendo Spring» de Notion: https://
 
 - **Diario de sesiones:** al final de cada sesión, añade una entrada con la fecha, lo hecho y lo pendiente.
 - **Base de datos «Lecciones»:** actualiza el estado de cada lección (Pendiente, En curso, Ejercicios en revisión, Completada) y escribe las notas de revisión dentro de la página de la lección.
+- **Barra de progreso de la web:** cada vez que cambie el estado de una lección en Notion, cambia también su `estado` en `web/src/data/progreso.ts` (y su `leccion` cuando se publique la teoría). Es la única fuente de la barra.
 - Las decisiones importantes del curso van en la sección «Decisiones del curso».

@@ -16,6 +16,9 @@ export default defineConfig({
 				{ icon: 'github', label: 'GitHub', href: 'https://github.com/heriamezcua/aprendiendo-spring' },
 			],
 			customCss: ['./src/styles/custom.css'],
+			components: {
+				PageTitle: './src/components/PageTitle.astro',
+			},
 			lastUpdated: true,
 			sidebar: [
 				{ label: 'Inicio', link: '/' },

@@ -1,0 +1,11 @@
+---
+// Sustituye al título de Starlight para añadir la barra de progreso en cada lección.
+import Default from '@astrojs/starlight/components/PageTitle.astro';
+import ProgresoCurso from './ProgresoCurso.astro';
+import { bloqueDeLeccion } from '../data/progreso';
+
+const bloque = bloqueDeLeccion(Astro.locals.starlightRoute.id);
+---
+
+<Default />
+{bloque && <ProgresoCurso variante="compacta" actual={bloque.numero} />}

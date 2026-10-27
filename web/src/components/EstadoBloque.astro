@@ -1,0 +1,30 @@
+---
+import { Badge } from '@astrojs/starlight/components';
+import type { Estado } from '../data/progreso';
+
+interface Props {
+	estado: Estado;
+}
+
+const { estado } = Astro.props;
+
+// «Pendiente» no usa Badge: su variante por defecto es el verde de acento y parecería hecho.
+const variante = {
+	'En curso': 'caution',
+	'Ejercicios en revisión': 'note',
+	Completada: 'success',
+} as const;
+---
+
+{estado === 'Pendiente' ? <span class="pendiente">Pendiente</span> : <Badge text={estado} variant={variante[estado]} />}
+
+<style>
+	.pendiente {
+		flex: none;
+		font-size: var(--sl-text-xs);
+		color: var(--sl-color-gray-3);
+		border: 1px dashed var(--sl-color-gray-4);
+		border-radius: 0.25rem;
+		padding: 0.1rem 0.4rem;
+	}
+</style>
