@@ -1,0 +1,283 @@
+---
+// Mapa de habilidades: un nodo por bloque, colocados por filas según sus requisitos.
+// Las flechas se dibujan en el navegador midiendo dónde ha quedado cada nodo, así se adaptan a cualquier ancho.
+import {
+	avancePorEstado,
+	bloques,
+	estadoNodo,
+	habilidadesDominadas,
+	habilidadesTotales,
+	nivel,
+	type EstadoNodo,
+} from '../data/progreso';
+
+const base = import.meta.env.BASE_URL.replace(/\/$/, '');
+
+const filas: (typeof bloques)[] = [];
+for (const b of bloques) (filas[nivel(b)] ??= []).push(b);
+
+const etiqueta: Record<EstadoNodo, string> = {
+	dominado: '✅ Dominado',
+	'en-marcha': '🔨 En marcha',
+	disponible: '🔓 Disponible',
+	bloqueado: '🔒 Bloqueado',
+};
+
+const cuantos = (e: EstadoNodo) => bloques.filter((b) => estadoNodo(b) === e).length;
+---
+
+<div class="marcador">
+	<p>
+		<strong>{habilidadesDominadas}</strong> de {habilidadesTotales} habilidades dominadas
+	</p>
+	<ul class="leyenda">
+		{(Object.keys(etiqueta) as EstadoNodo[]).map((e) => (
+			<li class={e}>
+				{etiqueta[e]} <span>({cuantos(e)})</span>
+			</li>
+		))}
+	</ul>
+</div>
+
+<div class="mapa" data-mapa>
+	<svg class="conexiones" aria-hidden="true"></svg>
+	{
+		filas.map((fila) => (
+			<div class="fila">
+				{fila.map((b) => {
+					const estado = estadoNodo(b);
+					const Etiqueta = b.leccion ? 'a' : 'div';
+					return (
+						<Etiqueta
+							class:list={['nodo', estado]}
+							href={b.leccion && `${base}/${b.leccion}/`}
+							data-bloque={b.numero}
+							data-requiere={b.requiere.join(' ')}
+							data-dominado={estado === 'dominado' ? '' : undefined}
+						>
+							<span class="cabecera">
+								<span class="numero">{b.numero}</span>
+								<span class="nombre">{b.nombre}</span>
+							</span>
+							<span class="estado">{etiqueta[estado]}</span>
+							{estado === 'en-marcha' && (
+								<span class="avance" style={`--avance: ${avancePorEstado[b.estado]}`} title={b.estado} />
+							)}
+							<span class="habilidades">
+								{b.habilidades.map((h) => (
+									<span class="habilidad">{h}</span>
+								))}
+							</span>
+						</Etiqueta>
+					);
+				})}
+			</div>
+		))
+	}
+</div>
+
+<script>
+	const NS = 'http://www.w3.org/2000/svg';
+
+	function dibujar(mapa: HTMLElement) {
+		const svg = mapa.querySelector<SVGSVGElement>('svg.conexiones')!;
+		const caja = mapa.getBoundingClientRect();
+		svg.setAttribute('viewBox', `0 0 ${caja.width} ${caja.height}`);
+		svg.replaceChildren();
+
+		for (const destino of mapa.querySelectorAll<HTMLElement>('[data-requiere]')) {
+			for (const n of destino.dataset.requiere!.split(' ').filter(Boolean)) {
+				const origen = mapa.querySelector<HTMLElement>(`[data-bloque="${n}"]`);
+				if (!origen) continue;
+				const a = origen.getBoundingClientRect();
+				const b = destino.getBoundingClientRect();
+				const x1 = a.left + a.width / 2 - caja.left;
+				const y1 = a.bottom - caja.top;
+				const x2 = b.left + b.width / 2 - caja.left;
+				const y2 = b.top - caja.top;
+				const medio = (y1 + y2) / 2;
+				const camino = document.createElementNS(NS, 'path');
+				camino.setAttribute('d', `M ${x1} ${y1} C ${x1} ${medio}, ${x2} ${medio}, ${x2} ${y2}`);
+				// La conexión se enciende cuando el requisito está dominado.
+				if (origen.hasAttribute('data-dominado')) camino.classList.add('activa');
+				svg.append(camino);
+			}
+		}
+	}
+
+	for (const mapa of document.querySelectorAll<HTMLElement>('[data-mapa]')) {
+		new ResizeObserver(() => dibujar(mapa)).observe(mapa);
+	}
+</script>
+
+<style>
+	.marcador p {
+		font-size: var(--sl-text-xl);
+		color: var(--sl-color-white);
+	}
+	.marcador strong {
+		color: var(--sl-color-accent-high);
+	}
+	.leyenda {
+		list-style: none;
+		padding: 0;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem 1rem;
+		font-size: var(--sl-text-sm);
+		color: var(--sl-color-gray-2);
+	}
+	.leyenda li {
+		margin: 0;
+	}
+	.leyenda span {
+		color: var(--sl-color-gray-3);
+	}
+
+	.mapa {
+		position: relative;
+		display: grid;
+		gap: 2.5rem;
+		margin-top: 2rem;
+	}
+	.conexiones {
+		position: absolute;
+		inset: 0;
+		width: 100%;
+		height: 100%;
+		pointer-events: none;
+		overflow: visible;
+	}
+	.conexiones :global(path) {
+		fill: none;
+		stroke: var(--sl-color-gray-5);
+		stroke-width: 2;
+		stroke-dasharray: 5 5;
+	}
+	.conexiones :global(path.activa) {
+		stroke: var(--sl-color-accent);
+		stroke-width: 3;
+		stroke-dasharray: none;
+	}
+
+	.fila {
+		display: flex;
+		justify-content: center;
+		gap: 1rem;
+		margin: 0 !important;
+	}
+	.nodo {
+		position: relative;
+		flex: 0 1 17rem;
+		min-width: 0;
+		margin: 0 !important;
+		display: flex;
+		flex-direction: column;
+		gap: 0.4rem;
+		padding: 0.75rem;
+		border: 2px solid var(--sl-color-gray-5);
+		border-radius: 0.75rem;
+		background: var(--sl-color-bg);
+		color: var(--sl-color-gray-2);
+		text-decoration: none;
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+	}
+	a.nodo:hover {
+		transform: translateY(-2px);
+	}
+	.cabecera {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.numero {
+		flex: none;
+		display: grid;
+		place-items: center;
+		width: 1.6rem;
+		height: 1.6rem;
+		border-radius: 50%;
+		background: var(--sl-color-gray-6);
+		color: var(--sl-color-white);
+		font-weight: 600;
+		font-size: var(--sl-text-xs);
+	}
+	.nombre {
+		font-weight: 600;
+		color: var(--sl-color-white);
+		line-height: 1.2;
+	}
+	.estado {
+		font-size: var(--sl-text-xs);
+	}
+	.habilidades {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.25rem;
+	}
+	.habilidad {
+		font-size: var(--sl-text-xs);
+		padding: 0.05rem 0.45rem;
+		border-radius: 999px;
+		background: var(--sl-color-gray-6);
+		color: var(--sl-color-gray-2);
+	}
+	.avance {
+		height: 0.35rem;
+		border-radius: 999px;
+		background: var(--sl-color-gray-5);
+		overflow: hidden;
+	}
+	.avance::before {
+		content: '';
+		display: block;
+		height: 100%;
+		width: calc(var(--avance) * 100%);
+		background: var(--sl-color-accent);
+	}
+
+	/* Estados */
+	.nodo.dominado {
+		border-color: var(--sl-color-accent);
+		box-shadow: 0 0 1.25rem color-mix(in srgb, var(--sl-color-accent) 45%, transparent);
+	}
+	.dominado .numero {
+		background: var(--sl-color-accent);
+		color: var(--sl-color-black);
+	}
+	.dominado .habilidad {
+		background: var(--sl-color-accent-low);
+		color: var(--sl-color-accent-high);
+	}
+	.nodo.en-marcha {
+		border-color: var(--sl-color-accent);
+		border-style: dashed;
+	}
+	.en-marcha .estado {
+		color: var(--sl-color-accent-high);
+	}
+	/* Lo disponible late suavemente: es lo siguiente que puedes conquistar. */
+	.nodo.disponible {
+		border-color: var(--sl-color-gray-3);
+		animation: latido 2.4s ease-in-out infinite;
+	}
+	@keyframes latido {
+		50% {
+			box-shadow: 0 0 0 4px color-mix(in srgb, var(--sl-color-accent) 30%, transparent);
+		}
+	}
+	.nodo.bloqueado {
+		opacity: 0.55;
+	}
+	.bloqueado .nombre {
+		color: var(--sl-color-gray-2);
+	}
+	@media (prefers-reduced-motion: reduce) {
+		.nodo {
+			transition: none;
+		}
+		.nodo.disponible {
+			animation: none;
+		}
+	}
+</style>

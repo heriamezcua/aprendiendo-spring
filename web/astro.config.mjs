@@ -22,6 +22,7 @@ export default defineConfig({
 			lastUpdated: true,
 			sidebar: [
 				{ label: 'Inicio', link: '/' },
+				{ label: 'Mapa de habilidades', link: '/mapa/' },
 				{
 					label: 'Lecciones',
 					items: [{ autogenerate: { directory: 'lecciones' } }],
